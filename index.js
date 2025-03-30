@@ -7,6 +7,16 @@ const port = process.env.PORT || 3000; // 3000 is the default port
 
 const userRoutes = require('./routes/user.routes.js');
 const authRoutes = require('./routes/auth.routes.js');
+const categoryRoutes = require('./routes/category.routes.js');
+const subCategoryRoutes = require('./routes/subCategory.routes.js');
+const productRoutes = require('./routes/product.routes.js');
+
+// Middleware para manejar el cuerpo de las solicitudes
+app.use((req, res, next) => {
+    res.setHeader("Content-Type", "application/json"); // Tipo de contenido
+    res.setHeader("X-Powered-By", "Edgar's API"); // Ejemplo de encabezado personalizado
+    next(); // Pasa al siguiente middleware o ruta
+});
 
 app.use(cors());
 app.use(express.json());
@@ -14,10 +24,10 @@ app.use(express.json());
 // Routes 
 app.use('/user', userRoutes);   
 app.use('/auth', authRoutes);
+app.use('/category', categoryRoutes);
+app.use('/subcategory', subCategoryRoutes);
+app.use('/product', productRoutes);
 
-app.get('/', (req, res) => {
-    res.send('Hello World!');
-});
 
 app.listen(port, () => {    
     console.log(`Server is running on port ${port}`);
