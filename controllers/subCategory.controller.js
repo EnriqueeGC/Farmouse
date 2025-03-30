@@ -1,158 +1,112 @@
-const db = require('../config/db.config.js');
+const { SubCategory } = require('../config/db.config.js');
 
-const createSubcategory = async (req, res) => {
-    const { nombre, id_categoria } = req.body;
-
+exports.createSubCategory = async (req, res) => {
     try {
-        const query = `INSERT INTO SUBCATEGORIAS (NOMBRE, ID_CATEGORIA)
-            VALUES (:nombre, :id_categoria)`;
-        const params = {
-            nombre,
-            id_categoria
+        const { nombre, id_categoria } = req.body;
+
+        if (!nombre || !id_categoria) {
+            return res.status(400).json({ message: "Name and category ID are required." });
+        }
+
+        // Crear subcategoría con Sequelize
+        const newSubCategory = await SubCategory.create({ nombre, id_categoria });
+
+        res.status(201).json({
+            message: "Subcategory created successfully",
+            data: newSubCategory
+        });
+    } catch (error) {
+        console.error('❌ Error creating subcategory:', error);
+        res.status(500).json({ message: "Error creating subcategory", error: error.message });
+    };
+};
+
+exports.getAllSubCategories = async (req, res) => {
+    try {
+        const subcategories = await SubCategory.findAll();
+        res.status(200).json({
+            message: "Subcategories retrieved successfully",
+            data: subcategories
+        });
+    } catch (error) {
+        console.error('❌ Error retrieving subcategories:', error);
+        res.status(500).json({ message: "Error retrieving subcategories", error: error.message });
+    };
+};
+
+exports.getById = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        if (!id) {
+            return res.status(400).json({ message: "ID is required." });
         };
-        result = await db.executeQuery(query, params);
 
-        return res.status(201).json({
-            message: 'Subcategoría creada exitosamente',
-            result
-        });
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({
-            message: 'Error al crear la subcategoría',
-            error
-        });
-    };
-};
+        const subcategory = await SubCategory.findByPk(id);
 
-const getAllSubcategories = async (req, res) => {
-    try {
-        const query = `SELECT * FROM SUBCATEGORIAS`;
-        const result = await db.executeQuery(query);
-
-        return res.status(200).json(result.rows);
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({
-            message: 'Error al obtener las subcategorías',
-            error
-        });
-    };
-};
-
-const getSubcategoryById = async (req, res) => {
-    const { id_subcategoria } = req.params;
-
-    try {
-        const query = `SELECT * FROM SUBCATEGORIAS WHERE ID_SUBCATEGORIA = :id_subcategoria`;
-        const params = [id_subcategoria];
-        const result = await db.executeQuery(query, params);
-
-        if (result.rows.length === 0) {
-            return res.status(404).json({
-                message: 'Subcategoría no encontrada'
-            });
+        if (!subcategory) {
+            return res.status(404).json({ message: "Subcategory not found." });
         }
 
-        return res.status(200).json(result.rows[0]);
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({
-            message: 'Error al obtener la subcategoría',
-            error
+        res.status(200).json({
+            message: "Subcategory retrieved successfully",
+            data: subcategory
         });
+    } catch (error) {
+        console.error('❌ Error retrieving subcategory:', error);
+        res.status(500).json({ message: "Error retrieving subcategory", error: error.message });
     };
 };
 
-const getSubcategoriesByCategory = async (req, res) => {
-    const { id_categoria } = req.params;
-
+exports.updateSubCategoryById = async (req, res) => {
     try {
-        const query = `SELECT * FROM SUBCATEGORIAS WHERE ID_CATEGORIA = :id_categoria`;
-        const params = [id_categoria];
-        const result = await db.executeQuery(query, params);
+        const { id } = req.params;
+        const { nombre, id_categoria } = req.body;
 
-        if (result.rows.length === 0) {
-            return res.status(404).json({
-                message: 'No se encontraron subcategorías para esta categoría'
-            });
-        }
-
-        return res.status(200).json(result.rows);
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({
-            message: 'Error al obtener las subcategorías por categoría',
-            error
-        });
-    };
-};
-
-const updateSubcategoryById = async (req, res) => {
-    const { id_subcategoria } = req.params;
-    const { nombre, id_categoria } = req.body;
-
-    try {
-        const query = `UPDATE SUBCATEGORIAS SET NOMBRE = :nombre, ID_CATEGORIA = :id_categoria
-            WHERE ID_SUBCATEGORIA = :id_subcategoria`;
-        const params = {
-            nombre,
-            id_categoria,
-            id_subcategoria
+        if (!id) {
+            return res.status(400).json({ message: "ID is required." });
         };
-        result = await db.executeQuery(query, params);
 
-        if (result.rowsAffected === 0) {
-            return res.status(404).json({
-                message: 'Subcategoría no encontrada'
-            });
+        // Actualizar subcategoría con Sequelize
+        const updatedSubCategory = await SubCategory.update(
+            { nombre, id_categoria },
+            { where: { id } }
+        );
+
+        if (updatedSubCategory[0] === 0) {
+            return res.status(404).json({ message: "Subcategory not found." });
         }
 
-        return res.status(200).json({
-            message: 'Subcategoría actualizada exitosamente',
-            result
+        res.status(200).json({
+            message: "Subcategory updated successfully",
+            data: { id, nombre, id_categoria }
         });
     } catch (error) {
-        console.error(error);
-        return res.status(500).json({
-            message: 'Error al actualizar la subcategoría',
-            error
-        });
+        console.error('❌ Error updating subcategory:', error);
+        res.status(500).json({ message: "Error updating subcategory", error: error.message });
     };
 };
 
-const deleteSubcategoryById = async (req, res) => {
-    const { id_subcategoria } = req.params;
-
+exports.deleteSubCategoryById = async (req, res) => {
     try {
-        const query = `DELETE FROM SUBCATEGORIAS WHERE ID_SUBCATEGORIA = :id_subcategoria`;
-        const params = [id_subcategoria];
-        result = await db.executeQuery(query, params);
+        const { id } = req.params;
 
-        if (result.rowsAffected === 0) {
-            return res.status(404).json({
-                message: 'Subcategoría no encontrada'
-            });
+        if (!id) {
+            return res.status(400).json({ message: "ID is required." });
+        };
+
+        // Eliminar subcategoría con Sequelize
+        const deletedSubCategory = await SubCategory.destroy({ where: { id } });
+
+        if (deletedSubCategory === 0) {
+            return res.status(404).json({ message: "Subcategory not found." });
         }
 
-        return res.status(200).json({
-            message: 'Subcategoría eliminada exitosamente',
-            result
+        res.status(200).json({
+            message: "Subcategory deleted successfully"
         });
     } catch (error) {
-        console.error(error);
-        return res.status(500).json({
-            message: 'Error al eliminar la subcategoría',
-            error
-        });
+        console.error('❌ Error deleting subcategory:', error);
+        res.status(500).json({ message: "Error deleting subcategory", error: error.message });
     };
-};
-
-module.exports = {
-    createSubcategory,
-    getAllSubcategories,
-    getSubcategoryById,
-    getSubcategoriesByCategory,
-    updateSubcategoryById,
-    deleteSubcategoryById
 };

@@ -1,153 +1,157 @@
-const db = require('../config/db.config.js');
+const { Product } = require('../config/db.config.js');
 
-const createProduct = async (req, res) => {
-    const { nombre, descripcion, precio, stock, id_subcategoria } = req.body;
-
+exports.createProduct = async (req, res) => {
     try {
-        const query = `INSERT INTO PRODUCTOS (NOMBRE, DESCRIPCION, PRECIO, STOCK, ID_SUBCATEGORIA)
-            VALUES (:nombre, :descripcion, :precio, :stock, :id_subcategoria)`;
-        const params = {
-            nombre,
-            descripcion,
-            precio,
-            stock,
-            id_subcategoria
-        };
-        result = await db.executeQuery(query, params);
+        const { nombre, descripcion, precio, stock, id_subcategoria, url_imagen } = req.body;
 
-        return res.status(201).json({
-            message: 'Producto creado exitosamente',
-            result
-        });
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({
-            message: 'Error al crear el producto',
-            error
-        });
-    }
-}
-
-const getAllProducts = async (req, res) => {
-    try {
-        const query = `SELECT * FROM PRODUCTOS`;
-        const result = await db.executeQuery(query);
-
-        return res.status(200).json(result.rows);
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({
-            message: 'Error al obtener los productos',
-            error
-        });
-    }
-}
-
-const getProductById = async (req, res) => {
-    const { id_producto } = req.params;
-
-    try {
-        const query = `SELECT * FROM PRODUCTOS WHERE ID_PRODUCTO = :id_producto`;
-        const params = [id_producto];
-        const result = await db.executeQuery(query, params);
-
-        if (result.rows.length === 0) {
-            return res.status(404).json({
-                message: 'Producto no encontrado'
-            });
+        if (!nombre || !descripcion || !precio || !stock || !id_subcategoria) {
+            return res.status(400).json({ message: "All fields are required." });
         }
 
-        return res.status(200).json(result.rows[0]);
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({
-            message: 'Error al obtener el producto',
-            error
-        });
-    };
-};
-
-const getProductsBySubcategory = async (req, res) => {
-    const { id_subcategoria } = req.params;
-
-    try {
-        const query = `SELECT * FROM PRODUCTOS WHERE ID_SUBCATEGORIA = :id_subcategoria`;
-        const params = [id_subcategoria];
-        const result = await db.executeQuery(query, params);
-
-        if (result.rows.length === 0) {
-            return res.status(404).json({
-                message: 'No se encontraron productos para esta subcategoría'
-            });
-        }
-
-        return res.status(200).json(result.rows);
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({
-            message: 'Error al obtener los productos por subcategoría',
-            error
-        });
-    };
-};
-
-const updateProductById = async (req, res) => {
-    const { id_producto } = req.params;
-    const { nombre, descripcion, precio, stock, id_subcategoria } = req.body;
-
-    try {
-        const query = `UPDATE PRODUCTOS SET NOMBRE = :nombre, DESCRIPCION = :descripcion, PRECIO = :precio,
-            STOCK = :stock, ID_SUBCATEGORIA = :id_subcategoria WHERE ID_PRODUCTO = :id_producto`;
-        const params = {
+        // Crear producto con Sequelize
+        const newProduct = await Product.create({
             nombre,
             descripcion,
             precio,
             stock,
             id_subcategoria,
-            id_producto
-        };
-        result = await db.executeQuery(query, params);
+            url_imagen
+        });
 
-        return res.status(200).json({
-            message: 'Producto actualizado exitosamente',
-            result
+        res.status(201).json({
+            message: "Product created successfully",
+            data: newProduct
         });
     } catch (error) {
-        console.error(error);
-        return res.status(500).json({
-            message: 'Error al actualizar el producto',
-            error
-        });
+        console.error('❌ Error creating product:', error);
+        res.status(500).json({ message: "Error creating product", error: error.message });
     };
 };
 
-const deleteProductById = async (req, res) => {
-    const { id_producto } = req.params;
-
+exports.getAllProducts = async (req, res) => {
     try {
-        const query = `DELETE FROM PRODUCTOS WHERE ID_PRODUCTO = :id_producto`;
-        const params = [id_producto];
-
-        const result = await db.executeQuery(query, params);
-
-        return res.status(200).json({
-            message: 'Producto eliminado exitosamente',
-            result
+        const products = await Product.findAll();
+        res.status(200).json({
+            message: "Products retrieved successfully",
+            data: products
         });
     } catch (error) {
-        console.error(error);
-        return res.status(500).json({
-            message: 'Error al eliminar el producto',
-            error
-        });
+        console.error('❌ Error retrieving products:', error);
+        res.status(500).json({ message: "Error retrieving products", error: error.message });
     };
 };
 
-module.exports = {
-    createProduct,
-    getAllProducts,
-    getProductById,
-    getProductsBySubcategory,
-    updateProductById,
-    deleteProductById
+exports.getById = async (req, res) => {
+    try {
+        const { id_producto } = req.params;
+
+        if (!id_producto) {
+            return res.status(400).json({ message: "ID is required." });
+        };
+
+        const product = await Product.findByPk(id_producto);
+
+        if (!product) {
+            return res.status(404).json({ message: "Product not found." });
+        }
+
+        res.status(200).json({
+            message: "Product retrieved successfully",
+            data: product
+        });
+    } catch (error) {
+        console.error('❌ Error retrieving product:', error);
+        res.status(500).json({ message: "Error retrieving product", error: error.message });
+    };
 };
+
+exports.updateProductById = async (req, res) => {
+    try {
+        const { id_producto } = req.params;
+        const { nombre, descripcion, precio, stock, id_subcategoria, url_imagen } = req.body;
+
+        if (!id_producto) {
+            return res.status(400).json({ message: "ID is required." });
+        };
+
+        const product = await Product.findByPk(id_producto);
+
+        if (!product) {
+            return res.status(404).json({ message: "Product not found." });
+        }
+
+        // Actualizar producto con Sequelize
+        await Product.update({
+            nombre,
+            descripcion,
+            precio,
+            stock,
+            id_subcategoria,
+            url_imagen
+        }, {
+            where: { id_producto: id_producto }
+        });
+
+        res.status(200).json({
+            message: "Product updated successfully",
+            data: { ...product.dataValues, ...req.body }
+        });
+    } catch (error) {
+        console.error('❌ Error updating product:', error);
+        res.status(500).json({ message: "Error updating product", error: error.message });
+    };
+};
+
+exports.deleteProductById = async (req, res) => {
+    try {
+        const { id_producto } = req.params;
+
+        if (!id_producto) {
+            return res.status(400).json({ message: "ID is required." });
+        };
+
+        const product = await Product.findByPk(id_producto);
+
+        if (!product) {
+            return res.status(404).json({ message: "Product not found." });
+        }
+
+        // Eliminar producto con Sequelize
+        await Product.destroy({
+            where: { id_producto: id_producto }
+        });
+
+        res.status(200).json({
+            message: "Product deleted successfully"
+        });
+    } catch (error) {
+        console.error('❌ Error deleting product:', error);
+        res.status(500).json({ message: "Error deleting product", error: error.message });
+    };
+};
+
+exports.getProductBySubCategory = async (req, res) => {
+    try {
+        const { id_subcategoria } = req.params;
+
+        if (!id_subcategoria) {
+            return res.status(400).json({ message: "ID is required." });
+        };
+
+        const products = await Product.findAll({
+            where: { id_categoria: id_subcategoria }
+        });
+
+        if (!products || products.length === 0) {
+            return res.status(404).json({ message: "Products not found." });
+        }
+
+        res.status(200).json({
+            message: "Products retrieved successfully",
+            data: products
+        });
+    } catch (error) {
+        console.error('❌ Error retrieving products:', error);
+        res.status(500).json({ message: "Error retrieving products", error: error.message });
+    };
+}

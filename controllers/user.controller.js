@@ -1,127 +1,157 @@
 require('dotenv').config();
-const db = require('../config/db.config.js');
+const { User } = require('../config/db.config.js');
 const bcrypt = require('bcrypt');
 
 const SECRET_KEY = process.env.SECRET_KEY;
 
-const registerUser = async (req, res) => {
-    const { nombre, apellido, correo, direccion, telefono, nombre_usuario, contrasenia} = req.body;
-    const rol = 3;
-
+exports.createUser = async (req, res) => {
     try {
-        const hashedPassword = await bcrypt.hash(contrasenia, 10);
-        const query = `INSERT INTO USUARIOS 
-            (NOMBRE, APELLIDO, CORREO, DIRECCION, TELEFONO, NOMBRE_USUARIO, CONTRASENIA, ROL) 
-            VALUES (:nombre, :apellido, :correo, :direccion, :telefono, :nombre_usuario, :contrasenia, :rol)`;
-            const params = { nombre, apellido, correo, direccion, telefono, nombre_usuario, contrasenia: hashedPassword, rol};
-            const result = await db.executeQuery(query, params);
+        const { nombre, apellido, correo, direccion, telefono, nombre_usuario, contrasenia } = req.body;
+        const rol = "cliente"; // Default role for new users
 
-            res.status(201).json({
-                message: 'Usuario registrado correctamente',
-                result
-            });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({
-            message: 'Error al registrar el usuario',
-            error
+        if (!nombre || !apellido || !correo || !direccion || !telefono || !nombre_usuario || !contrasenia || !rol) {
+            return res.status(400).json({ message: "All fields are required." });
+        }
+
+        // Verificar si el nombre de usuario ya existe
+        const existingUser = await User.findOne({ where: { nombre_usuario } });
+        if (existingUser) {
+            return res.status(400).json({ message: "Username already exists." });
+        }
+        // Verificar si el correo ya existe
+        const existingEmail = await User.findOne({ where: { correo } });
+        if (existingEmail) {
+            return res.status(400).json({ message: "Email already exists." });
+        }
+        // Encriptar la contraseña
+        const saltRounds = 10;
+        const salt = await bcrypt.genSalt(saltRounds);
+        const hashedPassword = await bcrypt.hash(contrasenia, salt);
+
+        console.log('🔑 Password hashed:', hashedPassword);
+        // Crear usuario con Sequelize
+        const newUser = await User.create({
+            nombre,
+            apellido,
+            correo,
+            direccion,
+            telefono,
+            nombre_usuario,
+            contrasenia: hashedPassword,
+            rol
         });
+
+        res.status(201).json({
+            message: "User created successfully",
+            data: newUser
+        });
+    } catch (error) {
+        console.error('❌ Error creating user:', error);
+        res.status(500).json({ message: "Error creating user", error: error.message });
     };
 };
 
-const getAllUsers = async (req, res) => {   
+exports.getAllUsers = async (req, res) => {
     try {
-        const query = `SELECT * FROM USUARIOS WHERE ROL = 3`;
-        const result = await db.executeQuery(query);
-
-        res.status(200).json(result.rows);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({
-            message: 'Error al obtener los usuarios',
-            error
+        const users = await User.findAll();
+        res.status(200).json({
+            message: "Users retrieved successfully",
+            data: users
         });
+    } catch (error) {
+        console.error('❌ Error retrieving users:', error);
+        res.status(500).json({ message: "Error retrieving users", error: error.message });
     };
 };
 
-const getUserById = async (req, res) => {   
-    const { id_usuario } = req.params;
-
+exports.getById = async (req, res) => {
     try {
-        const query = `SELECT * FROM USUARIOS WHERE ID_USUARIO = :id_usuario`;
-        const params = [id_usuario];
-        const result = await db.executeQuery(query, params);
+        const { id_usuario } = req.params;
 
-        if (result.rows.length === 0) {
-            return res.status(404).json({
-                message: 'Usuario no encontrado'
-            });
+        if (!id_usuario) {
+            return res.status(400).json({ message: "ID is required." });
         };
 
-        res.status(200).json(result.rows[0]);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({
-            message: 'Error al obtener el usuario',
-            error
-        });
-    };
-};
+        const user = await User.findByPk(id_usuario);
 
-const updateUserById = async (req, res) => {
-    const { id_usuario } = req.params;
-    const { nombre, apellido, correo, direccion, telefono, nombre_usuario, contrasenia } = req.body;
-
-    try {
-        const hashedPassword = await bcrypt.hash(contrasenia, 10);
-        const query = `UPDATE USUARIOS SET NOMBRE = :nombre, APELLIDO = :apellido, CORREO = :correo, DIRECCION = :direccion, TELEFONO = :telefono, NOMBRE_USUARIO = :nombre_usuario, CONTRASENIA = :contrasenia WHERE ID_USUARIO = :id_usuario`;
-        const params = { nombre, apellido, correo, direccion, telefono, nombre_usuario, contrasenia: hashedPassword, id_usuario };
-        const result = await db.executeQuery(query, params);
+        if (!user) {
+            return res.status(404).json({ message: "User not found." });
+        }
 
         res.status(200).json({
-            message: 'Usuario actualizado correctamente',
-            result
+            message: "User retrieved successfully",
+            data: user
         });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({
-            message: 'Error al actualizar el usuario',
-            error
-        });
+        console.error('❌ Error retrieving user:', error);
+        res.status(500).json({ message: "Error retrieving user", error: error.message });
     };
 };
 
-const deleteUserById = async (req, res) => {
-    const { id_usuario } = req.params;
-
+exports.updateUserById = async (req, res) => {
     try {
-        const query = `DELETE FROM USUARIOS WHERE ID_USUARIO = :id_usuario`;
-        const params = [id_usuario];
+        const { id_usuario } = req.params;
+        const { nombre, apellido, correo, direccion, telefono, nombre_usuario, contrasenia } = req.body;
 
-        const result = await db.executeQuery(query, params);
-        if (result.rowsAffected === 0) {
-            return res.status(404).json({
-                message: 'Usuario no encontrado'
-            });
+        if (!id_usuario) {
+            return res.status(400).json({ message: "ID is required." });
         };
 
+        // Buscar usuario por ID
+        const user = await User.findByPk(id_usuario);
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found." });
+        }
+
+        // contrasenia
+        const hashedPassword = await bcrypt.hash(contrasenia, 10);
+
+        // Actualizar usuario con Sequelize
+        await user.update({
+            nombre,
+            apellido,
+            correo,
+            direccion,
+            telefono,
+            nombre_usuario,
+            contrasenia: hashedPassword
+        });
+
         res.status(200).json({
-            message: 'Usuario eliminado correctamente',
-            result
-        })
+            message: "User updated successfully",
+            data: user
+        });
     } catch (error) {
-       console.error(error);
-         res.status(500).json({
-              message: 'Error al eliminar el usuario',
-              error
-         }); 
+        console.error('❌ Error updating user:', error);
+        res.status(500).json({ message: "Error updating user", error: error.message });
     };
 };
 
-module.exports = {
-    registerUser,
-    getAllUsers,
-    getUserById,
-    updateUserById,
-    deleteUserById
+exports.deleteUserById = async (req, res) => {
+    try {
+        const { id_usuario } = req.params;
+
+        if (!id_usuario) {
+            return res.status(400).json({ message: "ID is required." });
+        };
+
+        // Buscar usuario por ID
+        const user = await User.findByPk(id_usuario);
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found." });
+        }
+
+        // Eliminar usuario con Sequelize
+        await user.destroy();
+
+        res.status(200).json({
+            message: "User deleted successfully",
+            data: user
+        });
+    } catch (error) {
+        console.error('❌ Error deleting user:', error);
+        res.status(500).json({ message: "Error deleting user", error: error.message });
+    };
 };

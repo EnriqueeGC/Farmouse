@@ -1,59 +1,46 @@
 require('dotenv').config();
-const db = require('../config/db.config.js');
+const { User } = require('../config/db.config.js');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 
 const SECRET_KEY = process.env.SECRET_KEY;
 
-const login = async (req, res) => {
-    const { nombre_usuario, contrasenia } = req.body;
-
+exports.login = async (req, res) => {
     try {
-        const query = `SELECT * FROM USUARIOS WHERE NOMBRE_USUARIO = :nombre_usuario`;
-        const params = [nombre_usuario];
+        const { nombre_usuario, contrasenia } = req.body;
 
-        const result = await db.executeQuery(query, params);
-
-        if (result.rows.length === 0) {
-            return res.status(404).json({
-                message: 'Usuario no encontrado'
-            });
+        if (!nombre_usuario || !contrasenia) {
+            return res.status(400).json({ message: "Username and password are required." });
         }
 
-        const user = result.rows[0];
+        // Buscar el usuario por nombre de usuario
+        const user = await User.findOne({ where: { nombre_usuario } });
 
-        const isValidPassword = await bcrypt.compare(contrasenia, user.CONTRASENIA);
+        if (!user) {
+            return res.status(401).json({ message: "Invalid username or password." });
+        }
 
-        if (!isValidPassword) {
-            return res.status(401).json({
-                message: 'Contraseña incorrecta'
-            });
-        };
+        // Comparar la contraseña proporcionada con la almacenada
+        const isPasswordValid = await bcrypt.compare(contrasenia, user.contrasenia);
 
-        const token = jwt.sign(
-            {
-                id_usuario: user.ID_USUARIO,
-                nombre_usuario: user.NOMBRE_USUARIO,
-                rol: user.ROL
-            },
+        if (!isPasswordValid) {
+            return res.status(401).json({ message: "Invalid username or password." });
+        }
 
-            SECRET_KEY,
-            {
-                expiresIn: '1h'
+        // Generar un token JWT
+        const token = jwt.sign({ id_usuario: user.id_usuario }, SECRET_KEY, { expiresIn: '1h' });
+
+        res.status(200).json({
+            message: "Login successful",
+            data: {
+                id_usuario: user.id_usuario,
+                nombre_usuario: user.nombre_usuario,
+                rol: user.rol,
+                token
             }
-        );
-
-        return res.status(200).json({
-            message: 'Login exitoso',
-            token
         });
     } catch (error) {
-        console.error(error);
-        return res.status(500).json({
-            message: 'Error al hacer iniciar sesion',
-            error
-        });
-    };
-};
-
-module.exports = { login };
+        console.error('❌ Error during login:', error);
+        res.status(500).json({ message: "Error during login", error: error.message });
+    }
+}

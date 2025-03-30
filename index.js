@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const { sequelize } = require('./config/db.config.js'); // Importa la conexión a la base de datos
 
 const app = express();
 const port = process.env.PORT || 3000; // 3000 is the default port
@@ -29,7 +30,16 @@ app.use('/subcategory', subCategoryRoutes);
 app.use('/product', productRoutes);
 
 
-app.listen(port, () => {    
-    console.log(`Server is running on port ${port}`);
-});
-
+sequelize.authenticate()
+    .then(() => {
+        console.log('Conexión a la base de datos establecida con éxito.');
+        return sequelize.sync(); // Esto sincroniza los modelos con la BD
+    })
+    .then(() => {
+        app.listen(port, () => {
+            console.log(`Server is running on port ${port}`);
+        });
+    })
+    .catch(err => {
+        console.error('Error al conectar la base de datos:', err);
+    });
