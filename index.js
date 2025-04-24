@@ -11,6 +11,7 @@ const authRoutes = require('./routes/auth.routes.js');
 const categoryRoutes = require('./routes/category.routes.js');
 const subCategoryRoutes = require('./routes/subCategory.routes.js');
 const productRoutes = require('./routes/product.routes.js');
+const shoppingCartRoutes = require('./routes/shoppingCart.routes.js');
 
 // Middleware para manejar el cuerpo de las solicitudes
 app.use((req, res, next) => {
@@ -28,7 +29,7 @@ app.use('/auth', authRoutes);
 app.use('/category', categoryRoutes);
 app.use('/subcategory', subCategoryRoutes);
 app.use('/product', productRoutes);
-
+app.use('/shoppingCart', shoppingCartRoutes);
 
 sequelize.authenticate()
     .then(() => {

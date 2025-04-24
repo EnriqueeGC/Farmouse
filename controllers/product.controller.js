@@ -1,10 +1,25 @@
 const { Product } = require('../config/db.config.js');
+const { storage } = require('../config/cloudinary.config.js');
+const cloudinary = require('cloudinary').v2;
+const multer = require('multer');
+const upload = multer({ storage });
 
 exports.createProduct = async (req, res) => {
     try {
-        const { nombre, descripcion, precio, stock, id_subcategoria, url_imagen } = req.body;
+        const { nombre, descripcion, precio, stock, id_subcategoria } = req.body;
+
+        try {
+            let url_imagen = null;
+            if (req.file) {
+                const result = await cloudinary.uploader.upload(req.file.path);
+                url_imagen = result.secure_url;
+            }
+        } catch (error) {
+            error.message = "Error uploading image to Cloudinary";
+        }
 
         if (!nombre || !descripcion || !precio || !stock || !id_subcategoria) {
+            console.log(nombre, descripcion, precio, stock, id_subcategoria);
             return res.status(400).json({ message: "All fields are required." });
         }
 
