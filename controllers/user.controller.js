@@ -112,6 +112,30 @@ exports.getByUsername = async (req, res) => {
     };
 };
 
+exports.getByEmail = async (req, res) => {
+    try {
+        const { correo } = req.params;
+
+        if (!correo) {
+            return res.status(400).json({ message: "Email is required." });
+        };
+
+        const user = await User.findOne({ where: { correo } });
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found." });
+        }
+
+        res.status(200).json({
+            message: "User retrieved successfully",
+            data: user
+        });
+    } catch (error) {
+        console.error('❌ Error retrieving user:', error);
+        res.status(500).json({ message: "Error retrieving user", error: error.message });
+    };
+};
+
 exports.updateUserById = async (req, res) => {
     try {
         const { id_usuario } = req.params;
