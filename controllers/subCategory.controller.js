@@ -1,4 +1,5 @@
 const { SubCategory } = require('../config/db.config.js');
+const { Category } = require('../config/db.config.js');
 
 exports.createSubCategory = async (req, res) => {
     try {
@@ -57,6 +58,41 @@ exports.getById = async (req, res) => {
         res.status(500).json({ message: "Error retrieving subcategory", error: error.message });
     };
 };
+
+exports.getByCategoryId = async (req, res) => {
+    try {
+        const { id_categoria } = req.params;
+
+        if (!id_categoria) {
+            return res.status(400).json({ message: "Category ID is required." });
+        };
+
+        const subcategories = await SubCategory.findAll({ where: { id_categoria } });
+
+        if (subcategories.length === 0) {
+            return res.status(404).json({ message: "No subcategories found for this category." });
+        }
+
+        const nameCategory = await Category.findByPk(id_categoria);
+        if (!nameCategory) {
+            return res.status(404).json({ message: "Category not found." });
+        }
+        // Obtener el nombre de la categoría
+        const categoryName = nameCategory.nombre;
+        // Agregar el nombre de la categoría a cada subcategoría
+        subcategories.forEach(subcategory => {
+            subcategory.dataValues.categoryName = categoryName;
+        });
+
+        res.status(200).json({
+            message: "Subcategories retrieved successfully",
+            data: subcategories
+        });
+    } catch (error) {
+        console.error('❌ Error retrieving subcategories by category ID:', error);
+        res.status(500).json({ message: "Error retrieving subcategories", error: error.message });
+    };
+}
 
 exports.updateSubCategoryById = async (req, res) => {
     try {
