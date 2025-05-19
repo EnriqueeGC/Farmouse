@@ -154,7 +154,7 @@ exports.getProductBySubCategory = async (req, res) => {
         };
 
         const products = await Product.findAll({
-            where: { id_categoria: id_subcategoria }
+            where: { id_subcategoria: id_subcategoria }
         });
 
         if (!products || products.length === 0) {

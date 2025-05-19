@@ -65,9 +65,12 @@ exports.getByCategoryId = async (req, res) => {
 
         if (!id_categoria) {
             return res.status(400).json({ message: "Category ID is required." });
-        };
+        }
 
-        const subcategories = await SubCategory.findAll({ where: { id_categoria } });
+        const subcategories = await SubCategory.findAll({ 
+            where: { id_categoria },
+            attributes: ['id_subcategoria', 'nombre'] // Asegúrate de incluir solo los campos necesarios
+        });
 
         if (subcategories.length === 0) {
             return res.status(404).json({ message: "No subcategories found for this category." });
@@ -77,22 +80,26 @@ exports.getByCategoryId = async (req, res) => {
         if (!nameCategory) {
             return res.status(404).json({ message: "Category not found." });
         }
-        // Obtener el nombre de la categoría
+
         const categoryName = nameCategory.nombre;
-        // Agregar el nombre de la categoría a cada subcategoría
-        subcategories.forEach(subcategory => {
-            subcategory.dataValues.categoryName = categoryName;
-        });
+
+        // Mapear y agregar nombre de la categoría a cada subcategoría
+        const formattedSubcategories = subcategories.map(subcat => ({
+            id_subcategoria: subcat.id_subcategoria,
+            nombre: subcat.nombre,
+            categoryName: categoryName
+        }));
 
         res.status(200).json({
             message: "Subcategories retrieved successfully",
-            data: subcategories
+            data: formattedSubcategories
         });
     } catch (error) {
         console.error('❌ Error retrieving subcategories by category ID:', error);
         res.status(500).json({ message: "Error retrieving subcategories", error: error.message });
-    };
-}
+    }
+};
+
 
 exports.updateSubCategoryById = async (req, res) => {
     try {
