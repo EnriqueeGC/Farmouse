@@ -3,6 +3,7 @@ const { storage } = require('../config/cloudinary.config.js');
 const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
 const upload = multer({ storage });
+const { Op, Sequelize } = require('sequelize');
 
 exports.createProduct = async (req, res) => {
     try {
@@ -79,6 +80,38 @@ exports.getById = async (req, res) => {
         res.status(500).json({ message: "Error retrieving product", error: error.message });
     };
 };
+
+exports.getProductByName = async (req, res) => {
+    try {
+      const { nombre } = req.params;
+  
+      if (!nombre) {
+        return res.status(400).json({ message: "Name is required." });
+      }
+  
+      const product = await Product.findAll({
+        where: Sequelize.where(
+          Sequelize.fn('UPPER', Sequelize.col('"NOMBRE"')),  // Oracle usa columnas en mayúsculas
+          {
+            [Op.like]: `%${nombre.toUpperCase()}%`
+          }
+        )
+      });
+  
+      if (!product || product.length === 0) {
+        return res.status(404).json({ message: "Product not found." });
+      }
+  
+      res.status(200).json({
+        message: "Product retrieved successfully",
+        data: product
+      });
+  
+    } catch (error) {
+      console.error('❌ Error retrieving product:', error);
+      res.status(500).json({ message: "Error retrieving product", error: error.message });
+    }
+  };
 
 exports.updateProductById = async (req, res) => {
     try {
