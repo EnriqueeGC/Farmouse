@@ -39,6 +39,10 @@ module.exports = (sequelize, Sequelize) => {
             type: Sequelize.STRING,
             field: "ROL",
         },
+        url_imagen: {
+            type: Sequelize.STRING,
+            field: "URL_IMAGEN",
+        },
     }, {
         tableName: "USUARIOS",
         timestamps: false,

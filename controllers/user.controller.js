@@ -6,10 +6,10 @@ const SECRET_KEY = process.env.SECRET_KEY;
 
 exports.createUser = async (req, res) => {
     try {
-        const { nombre, apellido, correo, direccion, telefono, nombre_usuario, contrasenia } = req.body;
+        const { nombre, apellido, correo, direccion, telefono, nombre_usuario, contrasenia, url_imagen } = req.body;
         const rol = "cliente"; // Default role for new users
 
-        if (!nombre || !apellido || !correo || !direccion || !telefono || !nombre_usuario || !contrasenia || !rol) {
+        if (!nombre || !apellido || !correo || !direccion || !telefono || !nombre_usuario || !contrasenia || !rol || !url_imagen) {
             return res.status(400).json({ message: "All fields are required." });
         }
 
@@ -38,7 +38,8 @@ exports.createUser = async (req, res) => {
             telefono,
             nombre_usuario,
             contrasenia: hashedPassword,
-            rol
+            rol,
+            url_imagen
         });
 
         res.status(201).json({
@@ -139,7 +140,7 @@ exports.getByEmail = async (req, res) => {
 exports.updateUserById = async (req, res) => {
     try {
         const { id_usuario } = req.params;
-        const { nombre, apellido, correo, direccion, telefono, nombre_usuario, contrasenia } = req.body;
+        const { nombre, apellido, correo, direccion, telefono, nombre_usuario, contrasenia, url_imagen } = req.body;
 
         if (!id_usuario) {
             return res.status(400).json({ message: "ID is required." });
@@ -163,7 +164,8 @@ exports.updateUserById = async (req, res) => {
             direccion,
             telefono,
             nombre_usuario,
-            contrasenia: hashedPassword
+            contrasenia: hashedPassword,
+            url_imagen
         });
 
         res.status(200).json({
