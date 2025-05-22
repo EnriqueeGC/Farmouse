@@ -9,22 +9,22 @@ exports.createProduct = async (req, res) => {
     try {
         const { nombre, descripcion, precio, stock, id_subcategoria } = req.body;
 
-        try {
-            let url_imagen = null;
-            if (req.file) {
-                const result = await cloudinary.uploader.upload(req.file.path);
-                url_imagen = result.secure_url;
-            }
-        } catch (error) {
-            error.message = "Error uploading image to Cloudinary";
-        }
-
         if (!nombre || !descripcion || !precio || !stock || !id_subcategoria) {
-            console.log(nombre, descripcion, precio, stock, id_subcategoria);
             return res.status(400).json({ message: "All fields are required." });
         }
 
-        // Crear producto con Sequelize
+        let url_imagen = null;
+
+        if (req.file) {
+            try {
+                const result = await cloudinary.uploader.upload(req.file.path);
+                url_imagen = result.secure_url;
+            } catch (error) {
+                console.error("❌ Error uploading image to Cloudinary:", error);
+                return res.status(500).json({ message: "Error uploading image" });
+            }
+        }
+
         const newProduct = await Product.create({
             nombre,
             descripcion,
@@ -41,7 +41,7 @@ exports.createProduct = async (req, res) => {
     } catch (error) {
         console.error('❌ Error creating product:', error);
         res.status(500).json({ message: "Error creating product", error: error.message });
-    };
+    }
 };
 
 exports.getAllProducts = async (req, res) => {
@@ -113,14 +113,14 @@ exports.getProductByName = async (req, res) => {
     }
   };
 
-exports.updateProductById = async (req, res) => {
+  exports.updateProductById = async (req, res) => {
     try {
         const { id_producto } = req.params;
-        const { nombre, descripcion, precio, stock, id_subcategoria, url_imagen } = req.body;
+        const { nombre, descripcion, precio, stock, id_subcategoria } = req.body;
 
         if (!id_producto) {
             return res.status(400).json({ message: "ID is required." });
-        };
+        }
 
         const product = await Product.findByPk(id_producto);
 
@@ -128,26 +128,35 @@ exports.updateProductById = async (req, res) => {
             return res.status(404).json({ message: "Product not found." });
         }
 
-        // Actualizar producto con Sequelize
-        await Product.update({
+        let url_imagen = product.url_imagen;
+
+        if (req.file) {
+            try {
+                const result = await cloudinary.uploader.upload(req.file.path);
+                url_imagen = result.secure_url;
+            } catch (error) {
+                console.error("❌ Error uploading image to Cloudinary:", error);
+                return res.status(500).json({ message: "Error uploading image" });
+            }
+        }
+
+        await product.update({
             nombre,
             descripcion,
             precio,
             stock,
             id_subcategoria,
             url_imagen
-        }, {
-            where: { id_producto: id_producto }
         });
 
         res.status(200).json({
             message: "Product updated successfully",
-            data: { ...product.dataValues, ...req.body }
+            data: product
         });
     } catch (error) {
         console.error('❌ Error updating product:', error);
         res.status(500).json({ message: "Error updating product", error: error.message });
-    };
+    }
 };
 
 exports.deleteProductById = async (req, res) => {

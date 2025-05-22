@@ -1,15 +1,32 @@
 require('dotenv').config();
 const { User } = require('../config/db.config.js');
 const bcrypt = require('bcrypt');
+const { storage } = require('../config/cloudinary.config.js');
+const cloudinary = require('cloudinary').v2;
+const multer = require('multer');
+const upload = multer({ storage })
 
 const SECRET_KEY = process.env.SECRET_KEY;
 
 exports.createUser = async (req, res) => {
     try {
-        const { nombre, apellido, correo, direccion, telefono, nombre_usuario, contrasenia, url_imagen } = req.body;
+        const { nombre, apellido, correo, direccion, telefono, nombre_usuario, contrasenia } = req.body;
         const rol = "cliente"; // Default role for new users
 
-        if (!nombre || !apellido || !correo || !direccion || !telefono || !nombre_usuario || !contrasenia || !rol || !url_imagen) {
+        let url_imagen = null;
+
+        if (req.file) {
+            try {
+                const result = await cloudinary.uploader.upload(req.file.path);
+                url_imagen = result.secure_url;
+            } catch (error) {
+                console.error("❌ Error uploading image to Cloudinary:", error);
+                return res.status(500).json({ message: "Error uploading image" });
+            }
+        }
+
+        if (!nombre || !apellido || !correo || !direccion || !telefono || !nombre_usuario || !contrasenia) {
+            console.log(nombre, apellido, correo, direccion, telefono, nombre_usuario, contrasenia);
             return res.status(400).json({ message: "All fields are required." });
         }
 
@@ -18,18 +35,18 @@ exports.createUser = async (req, res) => {
         if (existingUser) {
             return res.status(400).json({ message: "Username already exists." });
         }
+
         // Verificar si el correo ya existe
         const existingEmail = await User.findOne({ where: { correo } });
         if (existingEmail) {
             return res.status(400).json({ message: "Email already exists." });
         }
+
         // Encriptar la contraseña
         const saltRounds = 10;
         const salt = await bcrypt.genSalt(saltRounds);
         const hashedPassword = await bcrypt.hash(contrasenia, salt);
 
-        console.log('🔑 Password hashed:', hashedPassword);
-        // Crear usuario con Sequelize
         const newUser = await User.create({
             nombre,
             apellido,
@@ -49,7 +66,7 @@ exports.createUser = async (req, res) => {
     } catch (error) {
         console.error('❌ Error creating user:', error);
         res.status(500).json({ message: "Error creating user", error: error.message });
-    };
+    }
 };
 
 exports.getAllUsers = async (req, res) => {
@@ -140,23 +157,35 @@ exports.getByEmail = async (req, res) => {
 exports.updateUserById = async (req, res) => {
     try {
         const { id_usuario } = req.params;
-        const { nombre, apellido, correo, direccion, telefono, nombre_usuario, contrasenia, url_imagen } = req.body;
+        const { nombre, apellido, correo, direccion, telefono, nombre_usuario, contrasenia } = req.body;
 
         if (!id_usuario) {
             return res.status(400).json({ message: "ID is required." });
-        };
+        }
 
-        // Buscar usuario por ID
         const user = await User.findByPk(id_usuario);
-
         if (!user) {
             return res.status(404).json({ message: "User not found." });
         }
 
-        // contrasenia
-        const hashedPassword = await bcrypt.hash(contrasenia, 10);
+        // Subida de nueva imagen si se proporciona
+        let url_imagen = user.url_imagen; // Valor por defecto (imagen actual)
+        if (req.file) {
+            try {
+                const result = await cloudinary.uploader.upload(req.file.path);
+                url_imagen = result.secure_url;
+            } catch (error) {
+                console.error("❌ Error uploading image to Cloudinary:", error);
+                return res.status(500).json({ message: "Error uploading image" });
+            }
+        }
 
-        // Actualizar usuario con Sequelize
+        // Si se proporciona una nueva contraseña, se hashea
+        let hashedPassword = user.contrasenia;
+        if (contrasenia) {
+            hashedPassword = await bcrypt.hash(contrasenia, 10);
+        }
+
         await user.update({
             nombre,
             apellido,
@@ -175,7 +204,7 @@ exports.updateUserById = async (req, res) => {
     } catch (error) {
         console.error('❌ Error updating user:', error);
         res.status(500).json({ message: "Error updating user", error: error.message });
-    };
+    }
 };
 
 exports.deleteUserById = async (req, res) => {

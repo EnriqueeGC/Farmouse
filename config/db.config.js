@@ -33,5 +33,8 @@ const sequelize = new Sequelize({
   db.Product = require('../models/products.model.js')(sequelize, Sequelize);
   db.ShoppingCart = require('../models/shoppingCart.model.js')(sequelize, Sequelize);
   db.CartDetails = require('../models/cartDetails.model.js')(sequelize, Sequelize);
+  db.Pedido = require('../models/pedido.model.js')(sequelize, Sequelize);
+  db.Envio = require('../models/envio.model.js')(sequelize, Sequelize);
+  db.TipoPago = require('../models/tipoPago.model.js')(sequelize, Sequelize);
   
   module.exports = db;
