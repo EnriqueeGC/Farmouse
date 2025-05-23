@@ -5,43 +5,58 @@ const multer = require('multer');
 const upload = multer({ storage });
 const { Op, Sequelize } = require('sequelize');
 
+const { Product } = require('../config/db.config.js');
+const cloudinary = require('cloudinary').v2;
+
 exports.createProduct = async (req, res) => {
-    try {
-      const { nombre, descripcion, precio, stock, id_subcategoria } = req.body;
-      let url_imagen = null;
-  
-      if (!nombre || !descripcion || !precio || !stock || !id_subcategoria) {
-        return res.status(400).json({ message: "All fields are required." });
-      }
-  
-      if (req.file) {
-        try {
-          const result = await cloudinary.uploader.upload(req.file.path);
-          url_imagen = result.secure_url;
-        } catch (error) {
-          console.error("Error uploading image to Cloudinary", error);
-          return res.status(500).json({ message: "Image upload failed" });
-        }
-      }
-  
-      const newProduct = await Product.create({
-        nombre,
-        descripcion,
-        precio,
-        stock,
-        id_subcategoria,
-        url_imagen
-      });
-  
-      res.status(201).json({
-        message: "Product created successfully",
-        data: newProduct
-      });
-    } catch (error) {
-      console.error('❌ Error creating product:', error);
-      res.status(500).json({ message: "Error creating product", error: error.message });
+  try {
+    const { nombre, descripcion } = req.body;
+    const precio = parseFloat(req.body.precio);
+    const stock = parseInt(req.body.stock, 10);
+    const id_subcategoria = parseInt(req.body.id_subcategoria, 10);
+    let url_imagen = null;
+
+    // Validar campos obligatorios
+    if (
+      !nombre ||
+      !descripcion ||
+      isNaN(precio) ||
+      isNaN(stock) ||
+      isNaN(id_subcategoria)
+    ) {
+      return res.status(400).json({ message: "Todos los campos son obligatorios y deben ser válidos." });
     }
-  };
+
+    // Subir imagen si fue enviada
+    if (req.file) {
+      try {
+        const result = await cloudinary.uploader.upload(req.file.path);
+        url_imagen = result.secure_url;
+      } catch (error) {
+        console.error("Error uploading image to Cloudinary", error);
+        return res.status(500).json({ message: "Error al subir imagen a Cloudinary" });
+      }
+    }
+
+    // Crear producto en base de datos
+    const newProduct = await Product.create({
+      nombre,
+      descripcion,
+      precio,
+      stock,
+      id_subcategoria,
+      url_imagen,
+    });
+
+    res.status(201).json({
+      message: "Producto creado exitosamente",
+      data: newProduct,
+    });
+  } catch (error) {
+    console.error("❌ Error creando producto:", error);
+    res.status(500).json({ message: "Error creando producto", error: error.message });
+  }
+};
 
 exports.getAllProducts = async (req, res) => {
     try {
