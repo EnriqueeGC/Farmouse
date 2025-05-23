@@ -7,42 +7,41 @@ const { Op, Sequelize } = require('sequelize');
 
 exports.createProduct = async (req, res) => {
     try {
-        const { nombre, descripcion, precio, stock, id_subcategoria } = req.body;
-
-        if (!nombre || !descripcion || !precio || !stock || !id_subcategoria) {
-            return res.status(400).json({ message: "All fields are required." });
+      const { nombre, descripcion, precio, stock, id_subcategoria } = req.body;
+      let url_imagen = null;
+  
+      if (!nombre || !descripcion || !precio || !stock || !id_subcategoria) {
+        return res.status(400).json({ message: "All fields are required." });
+      }
+  
+      if (req.file) {
+        try {
+          const result = await cloudinary.uploader.upload(req.file.path);
+          url_imagen = result.secure_url;
+        } catch (error) {
+          console.error("Error uploading image to Cloudinary", error);
+          return res.status(500).json({ message: "Image upload failed" });
         }
-
-        let url_imagen = null;
-
-        if (req.file) {
-            try {
-                const result = await cloudinary.uploader.upload(req.file.path);
-                url_imagen = result.secure_url;
-            } catch (error) {
-                console.error("❌ Error uploading image to Cloudinary:", error);
-                return res.status(500).json({ message: "Error uploading image" });
-            }
-        }
-
-        const newProduct = await Product.create({
-            nombre,
-            descripcion,
-            precio,
-            stock,
-            id_subcategoria,
-            url_imagen
-        });
-
-        res.status(201).json({
-            message: "Product created successfully",
-            data: newProduct
-        });
+      }
+  
+      const newProduct = await Product.create({
+        nombre,
+        descripcion,
+        precio,
+        stock,
+        id_subcategoria,
+        url_imagen
+      });
+  
+      res.status(201).json({
+        message: "Product created successfully",
+        data: newProduct
+      });
     } catch (error) {
-        console.error('❌ Error creating product:', error);
-        res.status(500).json({ message: "Error creating product", error: error.message });
+      console.error('❌ Error creating product:', error);
+      res.status(500).json({ message: "Error creating product", error: error.message });
     }
-};
+  };
 
 exports.getAllProducts = async (req, res) => {
     try {

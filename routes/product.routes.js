@@ -1,9 +1,12 @@
 const express = require('express');
+const multer = require('multer');
+const { storage } = require('../config/cloudinary.config');
+const upload = multer({ storage });
 const productController = require('../controllers/product.controller.js');
 
 const router = express.Router();
 
-router.post('/', productController.createProduct);
+router.post('/', upload.single('url_imagen'), productController.createProduct);
 router.get('/', productController.getAllProducts);
 router.get('/:id_producto', productController.getById);
 router.get('/nombre/:nombre', productController.getProductByName);
