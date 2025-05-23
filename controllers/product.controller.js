@@ -5,8 +5,6 @@ const multer = require('multer');
 const upload = multer({ storage });
 const { Op, Sequelize } = require('sequelize');
 
-const { Product } = require('../config/db.config.js');
-const cloudinary = require('cloudinary').v2;
 
 exports.createProduct = async (req, res) => {
   try {
