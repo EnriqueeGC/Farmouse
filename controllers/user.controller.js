@@ -11,42 +11,43 @@ const SECRET_KEY = process.env.SECRET_KEY;
 exports.createUser = async (req, res) => {
     try {
         const { nombre, apellido, correo, direccion, telefono, nombre_usuario, contrasenia } = req.body;
-        const rol = "cliente"; // Default role for new users
+        const rol = "cliente"; // Rol por defecto para nuevos usuarios
 
         let url_imagen = null;
 
+        // Subir imagen si fue enviada
         if (req.file) {
             try {
                 const result = await cloudinary.uploader.upload(req.file.path);
                 url_imagen = result.secure_url;
             } catch (error) {
-                console.error("❌ Error uploading image to Cloudinary:", error);
-                return res.status(500).json({ message: "Error uploading image" });
+                console.error("❌ Error subiendo imagen a Cloudinary:", error);
+                return res.status(500).json({ message: "Error al subir imagen" });
             }
         }
 
+        // Validar campos obligatorios
         if (!nombre || !apellido || !correo || !direccion || !telefono || !nombre_usuario || !contrasenia) {
-            console.log(nombre, apellido, correo, direccion, telefono, nombre_usuario, contrasenia);
-            return res.status(400).json({ message: "All fields are required." });
+            return res.status(400).json({ message: "Todos los campos son obligatorios." });
         }
 
         // Verificar si el nombre de usuario ya existe
         const existingUser = await User.findOne({ where: { nombre_usuario } });
         if (existingUser) {
-            return res.status(400).json({ message: "Username already exists." });
+            return res.status(400).json({ message: "El nombre de usuario ya está en uso." });
         }
 
         // Verificar si el correo ya existe
         const existingEmail = await User.findOne({ where: { correo } });
         if (existingEmail) {
-            return res.status(400).json({ message: "Email already exists." });
+            return res.status(400).json({ message: "El correo ya está registrado." });
         }
 
         // Encriptar la contraseña
         const saltRounds = 10;
-        const salt = await bcrypt.genSalt(saltRounds);
-        const hashedPassword = await bcrypt.hash(contrasenia, salt);
+        const hashedPassword = await bcrypt.hash(contrasenia, saltRounds);
 
+        // Crear usuario en la base de datos
         const newUser = await User.create({
             nombre,
             apellido,
@@ -56,16 +57,16 @@ exports.createUser = async (req, res) => {
             nombre_usuario,
             contrasenia: hashedPassword,
             rol,
-            url_imagen
+            url_imagen,
         });
 
         res.status(201).json({
-            message: "User created successfully",
-            data: newUser
+            message: "Usuario creado exitosamente",
+            data: newUser,
         });
     } catch (error) {
-        console.error('❌ Error creating user:', error);
-        res.status(500).json({ message: "Error creating user", error: error.message });
+        console.error("❌ Error creando usuario:", error);
+        res.status(500).json({ message: "Error creando usuario", error: error.message });
     }
 };
 
@@ -160,52 +161,70 @@ exports.updateUserById = async (req, res) => {
         const { nombre, apellido, correo, direccion, telefono, nombre_usuario, contrasenia } = req.body;
 
         if (!id_usuario) {
-            return res.status(400).json({ message: "ID is required." });
+            return res.status(400).json({ message: "El ID del usuario es obligatorio." });
         }
 
         const user = await User.findByPk(id_usuario);
         if (!user) {
-            return res.status(404).json({ message: "User not found." });
+            return res.status(404).json({ message: "Usuario no encontrado." });
         }
 
-        // Subida de nueva imagen si se proporciona
-        let url_imagen = user.url_imagen; // Valor por defecto (imagen actual)
+        // Verificar duplicado de correo si cambia
+        if (correo && correo !== user.correo) {
+            const emailExists = await User.findOne({ where: { correo } });
+            if (emailExists) {
+                return res.status(400).json({ message: "El correo ya está registrado por otro usuario." });
+            }
+        }
+
+        // Verificar duplicado de nombre_usuario si cambia
+        if (nombre_usuario && nombre_usuario !== user.nombre_usuario) {
+            const usernameExists = await User.findOne({ where: { nombre_usuario } });
+            if (usernameExists) {
+                return res.status(400).json({ message: "El nombre de usuario ya está en uso." });
+            }
+        }
+
+        // Subir nueva imagen si fue enviada
+        let url_imagen = user.url_imagen;
         if (req.file) {
             try {
                 const result = await cloudinary.uploader.upload(req.file.path);
                 url_imagen = result.secure_url;
             } catch (error) {
-                console.error("❌ Error uploading image to Cloudinary:", error);
-                return res.status(500).json({ message: "Error uploading image" });
+                console.error("❌ Error subiendo imagen a Cloudinary:", error);
+                return res.status(500).json({ message: "Error al subir la imagen" });
             }
         }
 
-        // Si se proporciona una nueva contraseña, se hashea
+        // Hashear nueva contraseña si se proporcionó
         let hashedPassword = user.contrasenia;
-        if (contrasenia) {
+        if (contrasenia && contrasenia.trim() !== "") {
             hashedPassword = await bcrypt.hash(contrasenia, 10);
         }
 
+        // Actualizar el usuario
         await user.update({
-            nombre,
-            apellido,
-            correo,
-            direccion,
-            telefono,
-            nombre_usuario,
+            nombre: nombre || user.nombre,
+            apellido: apellido || user.apellido,
+            correo: correo || user.correo,
+            direccion: direccion || user.direccion,
+            telefono: telefono || user.telefono,
+            nombre_usuario: nombre_usuario || user.nombre_usuario,
             contrasenia: hashedPassword,
             url_imagen
         });
 
         res.status(200).json({
-            message: "User updated successfully",
-            data: user
+            message: "Usuario actualizado exitosamente",
+            data: user,
         });
     } catch (error) {
-        console.error('❌ Error updating user:', error);
-        res.status(500).json({ message: "Error updating user", error: error.message });
+        console.error("❌ Error actualizando usuario:", error);
+        res.status(500).json({ message: "Error actualizando usuario", error: error.message });
     }
 };
+
 
 exports.deleteUserById = async (req, res) => {
     try {
