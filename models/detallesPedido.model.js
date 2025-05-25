@@ -27,7 +27,7 @@ module.exports = (sequelize, Sequelize) => {
             field: "PRECIO_UNITARIO"
         }
     }, {
-        tableName: "DETALLES_PEDIDOS",
+        tableName: "DETALLE_PEDIDOS",
         timestamps: false
     });
 

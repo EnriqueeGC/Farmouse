@@ -27,13 +27,14 @@ exports.registerPayment = async (req, res) => {
                 nombre,
                 apellido,
                 correo,
-                telefono
+                telefono,
+                direccion,
             });
         }
 
         // Crear pedido
         const nuevoPedido = await Pedido.create({
-            id_usuario: usuario.id,
+            id_usuario: usuario.id_usuario,
             direccion_envio: direccion,
             total,
             notas,
@@ -47,7 +48,7 @@ exports.registerPayment = async (req, res) => {
             }
 
             await DetallesPedido.create({
-                id_pedido: nuevoPedido.id,
+                id_pedido: nuevoPedido.id_pedido,
                 id_producto: item.idAlimento, // nombre del campo según carrito localStorage
                 cantidad: item.quantity,
                 precio_unitario: item.precio
@@ -56,7 +57,7 @@ exports.registerPayment = async (req, res) => {
 
         res.status(201).json({
             message: 'Pedido creado',
-            id_pedido: nuevoPedido.id,
+            id_pedido: nuevoPedido.id_pedido,
             total
         });
 
