@@ -8,7 +8,7 @@ module.exports = (sequelize, Sequelize) => {
         },
         id_usuario: {
             type: Sequelize.INTEGER,
-            allowNull: false,
+            allowNull: true,
             field: "ID_USUARIO"
         },
         fecha_pedido: {

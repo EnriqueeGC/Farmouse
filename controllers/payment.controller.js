@@ -29,6 +29,7 @@ exports.registerPayment = async (req, res) => {
                 correo,
                 telefono,
                 direccion,
+                rol: 'cliente' // Asignar rol por defecto
             });
         }
 
@@ -91,6 +92,34 @@ exports.createPaymentIntent = async (req, res) => {
         res.status(200).json({ clientSecret: paymentIntent.client_secret });
     } catch (error) {
         res.status(500).json({ error: error.message });
+    }
+};
+
+exports.confirmPayment = async (req, res) => {
+    const { paymentIntentId } = req.body;
+
+    try {
+        // Obtener detalles del pago desde Stripe
+        const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+        const id_pedido = paymentIntent.metadata.id_pedido;
+
+        // Validar el pedido
+        const pedido = await Pedido.findByPk(id_pedido);
+        if (!pedido) return res.status(404).json({ message: "Pedido no encontrado" });
+
+        // Confirmar estado del pago
+        if (paymentIntent.status !== 'succeeded') {
+            return res.status(400).json({ message: "El pago aún no se ha completado" });
+        }
+
+        // Actualizar estado del pedido
+        pedido.estado = 'pagado';
+        await pedido.save();
+
+        res.status(200).json({ message: "Pago confirmado y pedido actualizado" });
+    } catch (error) {
+        console.error("Error al confirmar el pago:", error);
+        res.status(500).json({ message: "Error al confirmar el pago" });
     }
 };
 
