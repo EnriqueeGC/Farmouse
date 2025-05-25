@@ -25,7 +25,16 @@ module.exports = (sequelize, Sequelize) => {
             type: Sequelize.DECIMAL(10, 2),
             allowNull: false,
             field: "TOTAL"
-        }
+        },
+        notas: {
+            type: Sequelize.STRING(255),
+            field: "NOTAS"
+        },
+        direccion_envio: {
+            type: Sequelize.STRING(255),
+            allowNull: false,
+            field: "DIRECCION_ENVIO"
+        },
     }, {
         tableName: "PEDIDOS",
         timestamps: false

@@ -36,5 +36,6 @@ const sequelize = new Sequelize({
   db.Pedido = require('../models/pedido.model.js')(sequelize, Sequelize);
   db.Envio = require('../models/envio.model.js')(sequelize, Sequelize);
   db.TipoPago = require('../models/tipoPago.model.js')(sequelize, Sequelize);
+  db.DetallesPedido = require('../models/detallesPedido.model.js')(sequelize, Sequelize);
   
   module.exports = db;

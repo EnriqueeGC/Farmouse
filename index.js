@@ -12,6 +12,8 @@ const categoryRoutes = require('./routes/category.routes.js');
 const subCategoryRoutes = require('./routes/subCategory.routes.js');
 const productRoutes = require('./routes/product.routes.js');
 const shoppingCartRoutes = require('./routes/shoppingCart.routes.js');
+const paymentRoutes = require('./routes/payment.routes.js');
+const webhooksRoutes = require('./routes/stripeWebhooks.routes.js');
 
 // Middleware para manejar el cuerpo de las solicitudes
 app.use((req, res, next) => {
@@ -19,6 +21,8 @@ app.use((req, res, next) => {
     res.setHeader("X-Powered-By", "Edgar's API"); // Ejemplo de encabezado personalizado
     next(); // Pasa al siguiente middleware o ruta
 });
+
+app.use('/api/webhook', express.raw({ type: 'application/json' }));
 
 app.use(cors());
 app.use(express.json());
@@ -30,6 +34,8 @@ app.use('/category', categoryRoutes);
 app.use('/subcategory', subCategoryRoutes);
 app.use('/product', productRoutes);
 app.use('/shoppingCart', shoppingCartRoutes);
+app.use('/api/payment', paymentRoutes)
+app.use('/api/webhook/', webhooksRoutes);
 
 sequelize.authenticate()
     .then(() => {
