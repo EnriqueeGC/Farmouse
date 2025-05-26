@@ -10,12 +10,11 @@ const SECRET_KEY = process.env.SECRET_KEY;
 
 exports.createUser = async (req, res) => {
     try {
-        const { nombre, apellido, correo, direccion, telefono, nombre_usuario, contrasenia } = req.body;
-        const rol = "cliente"; // Rol por defecto para nuevos usuarios
+        const { nombre, apellido, correo, direccion, telefono, nombre_usuario, contrasenia, rol } = req.body;
+        const finalRol = rol || "cliente"; // Usar el rol recibido o cliente por defecto
 
         let url_imagen = null;
 
-        // Subir imagen si fue enviada
         if (req.file) {
             try {
                 const result = await cloudinary.uploader.upload(req.file.path);
@@ -26,28 +25,23 @@ exports.createUser = async (req, res) => {
             }
         }
 
-        // Validar campos obligatorios
         if (!nombre || !apellido || !correo || !direccion || !telefono || !nombre_usuario || !contrasenia) {
             return res.status(400).json({ message: "Todos los campos son obligatorios." });
         }
 
-        // Verificar si el nombre de usuario ya existe
         const existingUser = await User.findOne({ where: { nombre_usuario } });
         if (existingUser) {
             return res.status(400).json({ message: "El nombre de usuario ya está en uso." });
         }
 
-        // Verificar si el correo ya existe
         const existingEmail = await User.findOne({ where: { correo } });
         if (existingEmail) {
             return res.status(400).json({ message: "El correo ya está registrado." });
         }
 
-        // Encriptar la contraseña
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(contrasenia, saltRounds);
 
-        // Crear usuario en la base de datos
         const newUser = await User.create({
             nombre,
             apellido,
@@ -56,7 +50,7 @@ exports.createUser = async (req, res) => {
             telefono,
             nombre_usuario,
             contrasenia: hashedPassword,
-            rol,
+            rol: finalRol,
             url_imagen,
         });
 
@@ -158,7 +152,7 @@ exports.getByEmail = async (req, res) => {
 exports.updateUserById = async (req, res) => {
     try {
         const { id_usuario } = req.params;
-        const { nombre, apellido, correo, direccion, telefono, nombre_usuario, contrasenia } = req.body;
+        const { nombre, apellido, correo, direccion, telefono, nombre_usuario, contrasenia, rol } = req.body;
 
         if (!id_usuario) {
             return res.status(400).json({ message: "El ID del usuario es obligatorio." });
@@ -169,7 +163,6 @@ exports.updateUserById = async (req, res) => {
             return res.status(404).json({ message: "Usuario no encontrado." });
         }
 
-        // Verificar duplicado de correo si cambia
         if (correo && correo !== user.correo) {
             const emailExists = await User.findOne({ where: { correo } });
             if (emailExists) {
@@ -177,7 +170,6 @@ exports.updateUserById = async (req, res) => {
             }
         }
 
-        // Verificar duplicado de nombre_usuario si cambia
         if (nombre_usuario && nombre_usuario !== user.nombre_usuario) {
             const usernameExists = await User.findOne({ where: { nombre_usuario } });
             if (usernameExists) {
@@ -185,7 +177,6 @@ exports.updateUserById = async (req, res) => {
             }
         }
 
-        // Subir nueva imagen si fue enviada
         let url_imagen = user.url_imagen;
         if (req.file) {
             try {
@@ -197,13 +188,11 @@ exports.updateUserById = async (req, res) => {
             }
         }
 
-        // Hashear nueva contraseña si se proporcionó
         let hashedPassword = user.contrasenia;
         if (contrasenia && contrasenia.trim() !== "") {
             hashedPassword = await bcrypt.hash(contrasenia, 10);
         }
 
-        // Actualizar el usuario
         await user.update({
             nombre: nombre || user.nombre,
             apellido: apellido || user.apellido,
@@ -212,6 +201,7 @@ exports.updateUserById = async (req, res) => {
             telefono: telefono || user.telefono,
             nombre_usuario: nombre_usuario || user.nombre_usuario,
             contrasenia: hashedPassword,
+            rol: rol || user.rol,
             url_imagen
         });
 
@@ -225,7 +215,6 @@ exports.updateUserById = async (req, res) => {
     }
 };
 
-
 exports.deleteUserById = async (req, res) => {
     try {
         const { id_usuario } = req.params;
@@ -234,14 +223,12 @@ exports.deleteUserById = async (req, res) => {
             return res.status(400).json({ message: "ID is required." });
         };
 
-        // Buscar usuario por ID
         const user = await User.findByPk(id_usuario);
 
         if (!user) {
             return res.status(404).json({ message: "User not found." });
         }
 
-        // Eliminar usuario con Sequelize
         await user.destroy();
 
         res.status(200).json({
