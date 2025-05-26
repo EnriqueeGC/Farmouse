@@ -4,5 +4,7 @@ const router = express.Router();
 const facturaController = require('../controllers/factura.controller');
 
 router.get('/:id_pago/download', facturaController.descargarFactura);
+router.get('/', facturaController.getAllFacturas);
+
 
 module.exports = router;

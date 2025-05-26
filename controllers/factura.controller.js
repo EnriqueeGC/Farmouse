@@ -4,6 +4,19 @@ const { Factura, Pago, Pedido, User, DetallesPedido, Product } = db;
 const sequelize = db.sequelize; // ✅ ESTA LÍNEA es la que faltaba
 
 
+exports.getAllFacturas = async (req, res) => {
+  try {
+    const facturas = await Factura.findAll({
+      order: [['fecha_emision', 'DESC']]
+    });
+    res.json({ data: facturas });
+  } catch (err) {
+    console.error("Error al obtener facturas:", err);
+    res.status(500).json({ message: "Error al obtener facturas" });
+  }
+};
+
+
 exports.descargarFactura = async (req, res) => {
     const { id_pago } = req.params;
 

@@ -41,9 +41,19 @@ db.Venta = require('../models/ventas.model.js')(sequelize, Sequelize);
 db.Pago = require('../models/pago.model.js')(sequelize, Sequelize);
 db.Factura = require('../models/factura.model.js')(sequelize, Sequelize);
 
-db.Product.hasMany(db.DetallesPedido, { foreignKey: 'id_producto' });
-db.DetallesPedido.belongsTo(db.Product, { foreignKey: 'id_producto' });
+db.Pedido.hasMany(db.DetallesPedido, {
+  foreignKey: 'id_pedido',
+  as: 'detalles'
+});
+db.DetallesPedido.belongsTo(db.Pedido, {
+  foreignKey: 'id_pedido'
+});
+
+db.Venta.belongsTo(db.Pedido, { 
+  foreignKey: "id_pedido", as: "pedido" });
+
 
 
 
 module.exports = db;
+
