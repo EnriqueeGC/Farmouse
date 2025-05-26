@@ -15,6 +15,7 @@ const shoppingCartRoutes = require('./routes/shoppingCart.routes.js');
 const paymentRoutes = require('./routes/payment.routes.js');
 const webhooksRoutes = require('./routes/stripeWebhooks.routes.js');
 const facturaRoutes = require('./routes/factura.routes.js');
+const slideRoutes = require('./routes/slide.routes.js');
 
 // Middleware para manejar el cuerpo de las solicitudes
 app.use((req, res, next) => {
@@ -38,6 +39,7 @@ app.use('/shoppingCart', shoppingCartRoutes);
 app.use('/api/payment', paymentRoutes)
 app.use('/api/webhook/', webhooksRoutes);
 app.use('/api/factura', facturaRoutes);
+app.use('/slides', slideRoutes);
 
 sequelize.authenticate()
     .then(() => {
