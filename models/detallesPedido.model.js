@@ -30,6 +30,6 @@ module.exports = (sequelize, Sequelize) => {
         tableName: "DETALLE_PEDIDOS",
         timestamps: false
     });
-
+    
     return DetallePedido;
 };

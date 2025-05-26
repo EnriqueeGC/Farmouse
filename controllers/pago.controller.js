@@ -1,35 +1,5 @@
-
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const { Pedido, User, DetallesPedido, Venta, Pago } = require('../config/db.config.js');
-
-/* exports.confirmarPago = async (req, res) => {
-    const { id_pedido } = req.body;
-
-    try {
-        // Validar el pedido
-        const pedido = await Pedido.findByPk(id_pedido);
-        if (!pedido) return res.status(404).json({ message: "Pedido no encontrado" });
-
-        // Cambiar estado a pagado
-        pedido.estado = 'pagado';
-        await pedido.save();
-
-        // Crear registro en VENTAS (suponiendo que tienes esa tabla)
-        await Venta.create({
-            id_pedido: id_pedido,
-            total: pedido.total,
-            fecha: new Date()
-        });
-
-        res.status(200).json({ message: "Pago confirmado y venta registrada" });
-    } catch (err) {
-        console.error("Error al confirmar el pago:", err);
-        res.status(500).json({ message: "Error al confirmar el pago" });
-    }
-};
-
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const { Pedido, Venta, Pago } = require('../config/db.config.js'); */
+const { Pedido, User, DetallesPedido, Venta, Pago, Factura } = require('../config/db.config.js');
 
 exports.confirmarPago = async (req, res) => {
     const { paymentIntentId } = req.body;
@@ -53,7 +23,7 @@ exports.confirmarPago = async (req, res) => {
         await pedido.save();
 
         // Registrar el pago
-        await Pago.create({
+        const nuevoPago = await Pago.create({
             id_pedido: id_pedido,
             metodo: paymentIntent.payment_method_types[0],
             monto: paymentIntent.amount / 100,
@@ -69,10 +39,34 @@ exports.confirmarPago = async (req, res) => {
             fecha: new Date()
         });
 
-        res.status(200).json({ message: "Pago confirmado, registrado y venta creada" });
+        // Generar número de factura único
+        const ultimaFactura = await Factura.findOne({
+            order: [['id_factura', 'DESC']]
+        });
+
+        const numeroSecuencial = ultimaFactura
+            ? parseInt(ultimaFactura.numero_factura.split('-')[1]) + 1
+            : 1;
+
+        const numeroFactura = `FAC-${new Date().getFullYear()}${numeroSecuencial.toString().padStart(4, '0')}`;
+
+        // Crear factura
+        await Factura.create({
+            id_pago: nuevoPago.id_pago,
+            numero_factura: numeroFactura,
+            total: nuevoPago.monto,
+            fecha_emision: new Date(),
+            estado: 'emitida'
+        });
+
+        res.status(200).json({
+            message: "Pago confirmado, venta y factura creadas correctamente",
+            id_pago: nuevoPago.id_pago,
+            numero_factura: numeroFactura,
+            factura_url: `https://farmouse.onrender.com/api/factura/${nuevoPago.id_pago}/download`
+        });
     } catch (err) {
         console.error("Error al confirmar el pago:", err);
         res.status(500).json({ message: "Error al confirmar el pago" });
     }
 };
-
