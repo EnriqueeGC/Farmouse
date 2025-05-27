@@ -1,16 +1,11 @@
 const db = require("../config/db.config.js");
-const Pedido = db.pedido;
-const Detalle = db.detallePedido;
+const Pedido = db.Pedido;
+const Detalle = db.DetallesPedido;
 
 exports.getAllPedidos = async (req, res) => {
   try {
     const pedidos = await Pedido.findAll({
-      include: [
-        {
-          model: Detalle,
-          as: 'detalles',
-        }
-      ],
+      include: [{ model: Detalle, as: 'detalles' }],
       order: [['fecha_pedido', 'DESC']]
     });
 

@@ -10,9 +10,10 @@ const sequelize = new Sequelize({
   dialectOptions: {
     connectString: process.env.DB_CONNECTION_STRING
   },
-  logging: console.log // Para ver queries en consola
+  logging: console.log // Muestra queries en consola
 });
 
+// Prueba de conexión
 (async () => {
   try {
     await sequelize.authenticate();
@@ -27,6 +28,7 @@ const db = {};
 db.Sequelize = Sequelize;
 db.sequelize = sequelize;
 
+// Importación de modelos
 db.User = require('../models/users.models.js')(sequelize, Sequelize);
 db.Category = require('../models/categorys.model.js')(sequelize, Sequelize);
 db.SubCategory = require('../models/subCategorys.models.js')(sequelize, Sequelize);
@@ -41,6 +43,7 @@ db.Venta = require('../models/ventas.model.js')(sequelize, Sequelize);
 db.Pago = require('../models/pago.model.js')(sequelize, Sequelize);
 db.Factura = require('../models/factura.model.js')(sequelize, Sequelize);
 
+// Relaciones
 db.Pedido.hasMany(db.DetallesPedido, {
   foreignKey: 'id_pedido',
   as: 'detalles'
@@ -49,11 +52,9 @@ db.DetallesPedido.belongsTo(db.Pedido, {
   foreignKey: 'id_pedido'
 });
 
-db.Venta.belongsTo(db.Pedido, { 
-  foreignKey: "id_pedido", as: "pedido" });
-
-
-
+db.Venta.belongsTo(db.Pedido, {
+  foreignKey: 'id_pedido',
+  as: 'pedido'
+});
 
 module.exports = db;
-
