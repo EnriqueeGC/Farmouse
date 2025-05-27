@@ -8,12 +8,11 @@ const sequelize = new Sequelize({
   username: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   dialectOptions: {
-    connectString: process.env.DB_CONNECTION_STRING
+    connectString: process.env.DB_CONNECTION_STRING,
   },
-  logging: console.log // Muestra queries en consola
+  logging: console.log,
 });
 
-// Prueba de conexión
 (async () => {
   try {
     await sequelize.authenticate();
@@ -38,7 +37,7 @@ db.CartDetails = require('../models/cartDetails.model.js')(sequelize, Sequelize)
 db.Pedido = require('../models/pedido.model.js')(sequelize, Sequelize);
 db.Envio = require('../models/envio.model.js')(sequelize, Sequelize);
 db.TipoPago = require('../models/tipoPago.model.js')(sequelize, Sequelize);
-db.DetallesPedido = require('../models/detallesPedido.model.js')(sequelize, Sequelize);
+db.DetallesPedido = require('../models/detallesPedido.model.js')(sequelize, Sequelize); // 👈 Asegúrate de usar este nombre
 db.Venta = require('../models/ventas.model.js')(sequelize, Sequelize);
 db.Pago = require('../models/pago.model.js')(sequelize, Sequelize);
 db.Factura = require('../models/factura.model.js')(sequelize, Sequelize);
