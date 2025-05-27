@@ -1,11 +1,11 @@
 const db = require("../config/db.config.js");
 const Pedido = db.Pedido;
-const Detalle = db.DetallesPedido;
+const DetallesPedido = db.DetallesPedido; // 👈 exactamente así
 
 exports.getAllPedidos = async (req, res) => {
   try {
     const pedidos = await Pedido.findAll({
-      include: [{ model: Detalle, as: 'detalles' }],
+      include: [{ model: DetallesPedido, as: 'detalles' }], // 👈 alias 'detalles' debe coincidir con el de db.config.js
       order: [['fecha_pedido', 'DESC']]
     });
 
