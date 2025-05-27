@@ -10,9 +10,22 @@ const SECRET_KEY = process.env.SECRET_KEY;
 
 exports.createUser = async (req, res) => {
     try {
-        const { nombre, apellido, correo, direccion, telefono, nombre_usuario, contrasenia, rol } = req.body;
-        const finalRol = rol || "cliente"; // Usar el rol recibido o cliente por defecto
+        const {
+            nombre,
+            apellido,
+            correo,
+            direccion,
+            telefono,
+            nombre_usuario,
+            contrasenia,
+            rol
+        } = req.body;
 
+        if (!nombre || !apellido || !correo || !direccion || !telefono || !nombre_usuario || !contrasenia) {
+            return res.status(400).json({ message: "Todos los campos son obligatorios." });
+        }
+
+        const finalRol = rol || "cliente";
         let url_imagen = null;
 
         if (req.file) {
@@ -20,25 +33,22 @@ exports.createUser = async (req, res) => {
                 const result = await cloudinary.uploader.upload(req.file.path);
                 url_imagen = result.secure_url;
             } catch (error) {
-                console.error("❌ Error subiendo imagen a Cloudinary:", error);
+                console.error("❌ Error subiendo imagen:", error);
                 return res.status(500).json({ message: "Error al subir imagen" });
             }
         }
 
-        if (!nombre || !apellido || !correo || !direccion || !telefono || !nombre_usuario || !contrasenia) {
-            return res.status(400).json({ message: "Todos los campos son obligatorios." });
-        }
-
         const existingUser = await User.findOne({ where: { nombre_usuario } });
         if (existingUser) {
-            return res.status(400).json({ message: "El nombre de usuario ya está en uso." });
+            return res.status(400).json({ message: "El nombre de usuario ya existe." });
         }
 
         const existingEmail = await User.findOne({ where: { correo } });
         if (existingEmail) {
-            return res.status(400).json({ message: "El correo ya está registrado." });
+            return res.status(400).json({ message: "El correo ya está en uso." });
         }
 
+        // 👉 Hashear la contraseña
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(contrasenia, saltRounds);
 
@@ -51,18 +61,24 @@ exports.createUser = async (req, res) => {
             nombre_usuario,
             contrasenia: hashedPassword,
             rol: finalRol,
-            url_imagen,
+            url_imagen
         });
 
         res.status(201).json({
             message: "Usuario creado exitosamente",
-            data: newUser,
+            data: {
+                id_usuario: newUser.id_usuario,
+                nombre_usuario: newUser.nombre_usuario,
+                correo: newUser.correo
+            }
         });
+
     } catch (error) {
-        console.error("❌ Error creando usuario:", error);
-        res.status(500).json({ message: "Error creando usuario", error: error.message });
+        console.error("❌ Error al crear usuario:", error);
+        res.status(500).json({ message: "Error al crear usuario", error: error.message });
     }
 };
+
 
 exports.getAllUsers = async (req, res) => {
     try {
