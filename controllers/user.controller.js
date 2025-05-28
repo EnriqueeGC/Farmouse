@@ -25,7 +25,7 @@ exports.createUser = async (req, res) => {
             return res.status(400).json({ message: "Todos los campos son obligatorios." });
         }
 
-        const finalRol = rol || "cliente";
+        const finalRol = "Cliente";
         let url_imagen = null;
 
         if (req.file) {
