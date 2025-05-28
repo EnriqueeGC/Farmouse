@@ -39,21 +39,10 @@ exports.confirmarPago = async (req, res) => {
             fecha: new Date()
         });
 
-        // Generar número de factura único
-        const ultimaFactura = await Factura.findOne({
-            order: [['id_factura', 'DESC']]
-        });
-
-        const numeroSecuencial = ultimaFactura
-            ? parseInt(ultimaFactura.numero_factura.split('-')[1]) + 1
-            : 1;
-
-        const numeroFactura = `FAC-${new Date().getFullYear()}${numeroSecuencial.toString().padStart(4, '0')}`;
-
         // Crear factura
         await Factura.create({
             id_pago: nuevoPago.id_pago,
-            numero_factura: numeroFactura,
+            // numero_factura: numeroFactura,
             total: nuevoPago.monto,
             fecha_emision: new Date(),
             estado: 'emitida'
@@ -62,7 +51,7 @@ exports.confirmarPago = async (req, res) => {
         res.status(200).json({
             message: "Pago confirmado, venta y factura creadas correctamente",
             id_pago: nuevoPago.id_pago,
-            numero_factura: numeroFactura,
+            // numero_factura: numeroFactura,
             factura_url: `https://farmouse.onrender.com/api/factura/${nuevoPago.id_pago}/download`
         });
     } catch (err) {

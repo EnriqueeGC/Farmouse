@@ -12,8 +12,8 @@ module.exports = (sequelize, Sequelize) => {
             field: "ID_PAGO"
         },
         numero_factura: {
-            type: Sequelize.STRING(50),
-            allowNull: false,
+            type: Sequelize.STRING(200),
+            allowNull: true,
             unique: true,
             field: "NUMERO_FACTURA"
         },
