@@ -11,7 +11,7 @@ router.get('/', productController.getAllProducts);
 router.get('/:id_producto', productController.getById);
 router.get('/nombre/:nombre', productController.getProductByName);
 router.get('/subcategoria/:id_subcategoria', productController.getProductBySubCategory);
-router.put('/:id_producto', upload.single('url_imagen'), productController.updateProduct);
+router.put('/:id', upad.single('url_imagen'), productController.updateProduct);
 router.delete('/:id_producto', productController.deleteProductById);
 
 module.exports = router;
